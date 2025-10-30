@@ -1,82 +1,109 @@
-'use client'; 
-// Dit is een 'Client Component' omdat het interactie (useState, fetch) bevat
+// components/FileUploadComponent.tsx
 
-import React, { useState } from 'react';
+"use client";
 
-export function FileUploadComponent() {
+import { useState } from "react";
+
+// 1. Definieer de props die dit component accepteert
+interface FileUploadProps {
+  onUploadSuccess: () => void; // Dit is de functie die page.tsx meegeeft
+}
+
+// 2. Accepteer de props (specifiek 'onUploadSuccess')
+export function FileUploadComponent({ onUploadSuccess }: FileUploadProps) {
   const [file, setFile] = useState<File | null>(null);
-  const [status, setStatus] = useState<string>('Klaar om te uploaden.');
-  const [loading, setLoading] = useState<boolean>(false);
+  const [isUploading, setIsUploading] = useState(false);
+  const [message, setMessage] = useState("");
 
-  const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    if (e.target.files && e.target.files.length > 0) {
-      setFile(e.target.files[0]);
-      setStatus(`Geselecteerd: ${e.target.files[0].name}`);
-    } else {
-      setFile(null);
-      setStatus('Klaar om te uploaden.');
+  const handleFileChange = (event: React.ChangeEvent<HTMLInputElement>) => {
+    if (event.target.files) {
+      setFile(event.target.files[0]);
+      setMessage(""); // Reset bericht bij nieuw bestand
     }
   };
 
-  const handleUpload = async () => {
+  const handleSubmit = async (event: React.FormEvent<HTMLFormElement>) => {
+    event.preventDefault();
     if (!file) {
-      setStatus('Selecteer eerst een CSV-bestand.');
+      setMessage("Selecteer eerst een bestand.");
       return;
     }
 
-    setLoading(true);
-    setStatus('Uploaden naar Google Cloud Storage...');
-
-    const formData = new FormData();
-    formData.append('file', file); // 'file' is de naam die onze API verwacht
+    setIsUploading(true);
+    setMessage("Bestand uploaden...");
 
     try {
-      const response = await fetch('/api/upload', {
-        method: 'POST',
+      const formData = new FormData();
+      formData.append("file", file);
+
+      // Stuurt het bestand naar onze *eigen* Vercel API-route
+      const response = await fetch("/api/upload", {
+        method: "POST",
         body: formData,
       });
 
-      const result = await response.json();
-
       if (response.ok) {
-        // Dit bericht bevestigt de keten: Frontend -> API Route -> Cloud Storage -> Cloud Run
-        setStatus(`Upload succesvol. De analyse van ${result.fileName} is gestart!`);
-        // We verwijderen het bestand uit de selector na succes
-        setFile(null);
+        const result = await response.json();
+        setMessage(`Upload succesvol: ${result.filename}`);
+        setFile(null); // Reset het bestandsveld
+        // 3. Roep de prop-functie aan om het dashboard te vernieuwen!
+        onUploadSuccess();
       } else {
-        setStatus(`Upload mislukt: ${result.error || 'Onbekende fout.'}`);
+        const error = await response.json();
+        setMessage(`Upload mislukt: ${error.message}`);
       }
-    } catch (error) {
-      setStatus('Er is een netwerkfout opgetreden bij het uploaden.');
+    } catch (error: any) {
+      setMessage(`Fout: ${error.message}`);
     } finally {
-      setLoading(false);
+      setIsUploading(false);
     }
   };
 
   return (
-    <div className="flex flex-col items-center gap-4 w-full max-w-lg p-6 bg-white border border-gray-200 rounded-lg shadow-lg">
-      <h2 className="text-xl font-semibold text-gray-700">Upload uw Bankafschrift (.csv)</h2>
-      
-      <input 
-        type="file" 
-        accept=".csv" 
-        onChange={handleFileChange} 
-        className="w-full text-sm text-gray-600 file:mr-4 file:py-2 file:px-4 file:rounded-full file:border-0 file:text-sm file:font-semibold file:bg-blue-50 file:text-blue-700 hover:file:bg-blue-100"
-      />
-      
-      <button 
-        onClick={handleUpload} 
-        disabled={!file || loading}
-        className={`w-full py-2 px-4 rounded-lg text-white font-semibold transition duration-150 ${
-            loading ? 'bg-gray-400 cursor-not-allowed' : 'bg-green-600 hover:bg-green-700'
-        }`}
+    <form onSubmit={handleSubmit} className="space-y-4">
+      <div>
+        <label
+          htmlFor="file-upload"
+          className="block text-sm font-medium text-gray-700"
+        >
+          Selecteer CSV-bestand
+        </label>
+        <input
+          id="file-upload"
+          name="file-upload"
+          type="file"
+          accept=".csv"
+          onChange={handleFileChange}
+          className="mt-1 block w-full text-sm text-gray-500
+            file:mr-4 file:py-2 file:px-4
+            file:rounded-md file:border-0
+            file:text-sm file:font-semibold
+            file:bg-blue-50 file:text-blue-700
+            hover:file:bg-blue-100"
+        />
+      </div>
+
+      <button
+        type="submit"
+        disabled={!file || isUploading}
+        className="px-4 py-2 bg-blue-600 text-white rounded-md
+          disabled:bg-gray-400 disabled:cursor-not-allowed
+          hover:bg-blue-700 transition-colors"
       >
-        {loading ? 'Bezig met uploaden...' : 'Upload en Start Analyse'}
+        {isUploading ? "Bezig met uploaden..." : "Upload en Verwerk"}
       </button>
 
-      <p className={`mt-2 text-sm ${loading ? 'text-blue-600' : status.includes('mislukt') ? 'text-red-500' : 'text-gray-600'}`}>
-        {status}
-      </p>
-    </div>
+      {message && (
+        <p
+          className={`text-sm ${
+            message.startsWith("Upload succesvol")
+              ? "text-green-600"
+              : "text-red-600"
+          }`}
+        >
+          {message}
+        </p>
+      )}
+    </form>
   );
 }
