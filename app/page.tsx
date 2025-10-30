@@ -3,7 +3,7 @@
 "use client"; // Deze pagina haalt nu data op en is interactief
 
 import { useState, useEffect } from "react";
-import FileUploadComponent from "../components/FileUploadComponent";
+import { FileUploadComponent } from "../components/FileUploadComponent";
 import AnalysisDashboard, {
   GrafiekData,
 } from "../components/AnalysisDashboard";
