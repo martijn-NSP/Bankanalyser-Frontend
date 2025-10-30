@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { Storage } from '@google-cloud/storage';
 
-// Next.js instelling: zorgt ervoor dat dit een server-side functie blijft
+// Next.js  instelling: zorgt ervoor dat dit een server-side functie blijft
 export const dynamic = 'force-dynamic';
 
 // 1. Initialiseer Google Cloud Storage Client (gebeurt op de Vercel server)
