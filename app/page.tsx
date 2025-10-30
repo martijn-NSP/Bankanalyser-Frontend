@@ -19,8 +19,7 @@ interface AnalysisData {
 }
 
 // --- 2. De URL van je nieuwe API--
-const API_URL =
-  "https://backend-api-analysis-373534021375.europe-west4.run.app";
+const API_URL = process.env.NEXT_PUBLIC_API_ANALYSIS_URL!;
 
 export default function Home() {
   // State voor het bijhouden van de API data
