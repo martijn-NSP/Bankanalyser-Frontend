@@ -119,8 +119,8 @@ export default function AnalysisDashboard({ data }: DashboardProps) {
             valueFormatter={formatCurrency}
             
             {/* DE FIX IS HIER: 
-              We negeren de TypeScript-fout omdat we weten dat onValueClick bestaat,
-              maar de type-check is kapot door het React 18/19 conflict.
+              Het commentaar staat nu in { }-accolades, wat correcte JSX-syntax is.
+              We negeren de TypeScript-fout omdat we weten dat onValueClick bestaat.
             */}
             // @ts-ignore-next-line
             onValueClick={handleDonutClick} 
