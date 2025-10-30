@@ -1,6 +1,6 @@
 // frontend/app/page.tsx
 
-"use client"; // Deze pagina haalt nu data op en is interactief
+"use client"; // Deze pagina haalt nu data op en is interactief 
 
 import { useState, useEffect } from "react";
 import { FileUploadComponent } from "../components/FileUploadComponent";
