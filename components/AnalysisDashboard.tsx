@@ -117,12 +117,6 @@ export default function AnalysisDashboard({ data }: DashboardProps) {
             category="value"
             index="name"
             valueFormatter={formatCurrency}
-            
-          {/* DE FIX IS HIER: 
-              Het commentaar staat nu in { }-accolades, wat correcte JSX-syntax is.
-              We negeren de TypeScript-fout omdat we weten dat onValueClick bestaat.
-            */}
-            {/* @ts-ignore-next-line */}
             onValueClick={handleDonutClick}
             // @ts-ignore-next-line
             onValueClick={handleDonutClick} 
