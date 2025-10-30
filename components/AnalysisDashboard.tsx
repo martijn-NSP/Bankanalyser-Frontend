@@ -117,7 +117,6 @@ export default function AnalysisDashboard({ data }: DashboardProps) {
             category="value"
             index="name"
             valueFormatter={formatCurrency}
-            onValueClick={handleDonutClick}
             // @ts-ignore-next-line
             onValueClick={handleDonutClick} 
 
