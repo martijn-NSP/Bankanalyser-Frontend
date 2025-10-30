@@ -1,6 +1,6 @@
-// frontend/components/AnalysisDashboard.tsx
+// components/AnalysisDashboard.tsx
 
-"use client"; // Dit component is interactief
+"use client";
 
 import {
   Card,
@@ -8,7 +8,6 @@ import {
   BarList,
   Text,
   Title,
-  Grid,
   Metric,
   Badge,
 } from "@tremor/react";
@@ -53,7 +52,6 @@ export default function AnalysisDashboard({ data }: DashboardProps) {
     useState<GrafiekData | null>(null);
 
   // De data voor de hoofdgrafiek (DonutChart)
-  // We mappen de data naar het formaat dat Tremor verwacht
   const hoofGrafiekData = data.grafiek_data.map((item) => ({
     name: item.categorie,
     value: item.totaal_bedrag,
@@ -69,7 +67,6 @@ export default function AnalysisDashboard({ data }: DashboardProps) {
     : data.grafiek_data[0]?.categorie || "Subcategorieën";
 
   // --- 4. De "Drill-Down" functie ---
-  // Dit wordt aangeroepen als je op een stuk van de DonutChart klikt
   const handleDonutClick = (payload: any) => {
     if (!payload) {
       setGeselecteerdeCategorie(null);
@@ -92,8 +89,8 @@ export default function AnalysisDashboard({ data }: DashboardProps) {
         <Metric>{data.rapport_tekst}</Metric>
       </Card>
 
-      {/* Totaal Inkomsten & Uitgaven */}
-      <Grid numColsSm={1} numColsLg={2} className="gap-4 mb-4">
+      {/* Totaal Inkomsten & Uitgaven - VERVANGEN DOOR DIV */}
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-4 mb-4">
         <Card>
           <Text>Totaal Inkomsten</Text>
           <Metric className="text-green-600">
@@ -106,10 +103,10 @@ export default function AnalysisDashboard({ data }: DashboardProps) {
             {formatCurrency(data.totaal_uitgaven)}
           </Metric>
         </Card>
-      </Grid>
+      </div>
 
-      {/* De Interactieve Grafieken */}
-      <Grid numColsSm={1} numColsLg={5} className="gap-4">
+      {/* De Interactieve Grafieken - VERVANGEN DOOR DIV */}
+      <div className="grid grid-cols-1 lg:grid-cols-5 gap-4">
         {/* Hoofdgrafiek (Donut) */}
         <Card className="lg:col-span-3">
           <Title>Uitgaven per Hoofdcategorie</Title>
@@ -136,8 +133,7 @@ export default function AnalysisDashboard({ data }: DashboardProps) {
         {/* Subgrafiek (BarList) */}
         <Card className="lg:col-span-2">
           <Title>
-            Details voor:{" "}
-            <Badge color="blue">{subGrafiekTitel}</Badge>
+            Details voor: <Badge color="blue">{subGrafiekTitel}</Badge>
           </Title>
           <Text>Subcategorieën (gesorteerd op bedrag)</Text>
           <BarList
@@ -146,7 +142,7 @@ export default function AnalysisDashboard({ data }: DashboardProps) {
             valueFormatter={formatCurrency}
           />
         </Card>
-      </Grid>
+      </div>
     </div>
   );
 }
