@@ -7,7 +7,7 @@ import { FileUploadComponent } from "../components/FileUploadComponent";
 import AnalysisDashboard, {
   GrafiekData,
 } from "../components/AnalysisDashboard";
-import { Title, Text, Card, Spinner } from "@tremor/react";
+import { Title, Text, Card } from "@tremor/react";
 
 // --- 1. Definieer het volledige API-response type   ---
 // (We herhalen de types hier voor de fetch-logica)
@@ -80,7 +80,7 @@ export default function Home() {
           {/* Toon een laad-indicator */}
           {isLoading && (
             <div className="flex justify-center items-center h-40">
-              <Spinner size="xl" />
+              {/* Spinner is hier verwijderd, alleen de tekst blijft over */}
               <Text className="ml-4 text-lg">Dashboard wordt geladen...</Text>
             </div>
           )}
