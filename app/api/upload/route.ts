@@ -1,61 +1,75 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { Storage } from '@google-cloud/storage';
 
-// Next.js  instelling: zorgt ervoor dat dit een server-side functie blijft
-export const dynamic = 'force-dynamic';
-
-// 1. Initialiseer Google Cloud Storage Client (gebeurt op de Vercel server)
+// Initialiseer de Google Cloud Storage client
 const storage = new Storage({
-    projectId: process.env.GCP_PROJECT_ID,
-    credentials: {
-        client_email: process.env.GCP_CLIENT_EMAIL,
-        // Belangrijk: vervang '\n' in de string om newlines correct te interpreteren
-        private_key: process.env.GCP_PRIVATE_KEY?.replace(/\\n/g, '\n'), 
-    },
+  projectId: process.env.GCP_PROJECT_ID,
 });
 
-const bucketName = process.env.GCP_BUCKET_NAME;
+// De bucket waar ongeprocessede CSV's landen
+const bucketName = process.env.GCP_UNPROCESSED_BUCKET_NAME;
 
-export async function POST(req: NextRequest) {
-    if (!bucketName) {
-        return NextResponse.json({ error: 'Bucketnaam is niet geconfigureerd in de omgeving.' }, { status: 500 });
+// De API route om CSV bestanden te ontvangen en naar Cloud Storage te sturen
+export async function POST(request: NextRequest) {
+  if (!bucketName) {
+    return NextResponse.json(
+      { error: 'GCP_UNPROCESSED_BUCKET_NAME is niet ingesteld.' },
+      { status: 500 }
+    );
+  }
+
+  try {
+    const formData = await request.formData();
+    const file = formData.get('file') as File | null;
+
+    if (!file) {
+      return NextResponse.json(
+        { error: 'Geen bestand gevonden in de aanvraag.' },
+        { status: 400 }
+      );
     }
-    
-    try {
-        // 2. Lees de inkomende FormData (nodig voor bestands-uploads)
-        const formData = await req.formData();
-        const file = formData.get('file');
 
-        if (!file || !(file instanceof File)) {
-            return NextResponse.json({ error: 'Geen bestand gevonden.' }, { status: 400 });
-        }
+    const arrayBuffer = await file.arrayBuffer();
+    const buffer = Buffer.from(arrayBuffer);
 
-        // 3. Converteer bestand naar een Buffer en maak een unieke naam
-        const buffer = Buffer.from(await file.arrayBuffer());
-        // Maak een veilige bestandsnaam met tijdstempel om conflicten te voorkomen
-        const safeFileName = `${Date.now()}-${file.name.replace(/[^a-z0-9.]/gi, '_').toLowerCase()}`;
-        
-        const bucket = storage.bucket(bucketName);
-        const blob = bucket.file(safeFileName);
+    // Genereer een unieke bestandsnaam om conflicten te voorkomen
+    const uniqueFileName = `${Date.now()}-${file.name}`;
 
-        // 4. Upload het bestand naar Google Cloud Storage
-        await blob.save(buffer, {
-            contentType: file.type || 'text/csv',
-        });
+    const fileUploadPromise = new Promise<void>((resolve, reject) => {
+      const blob = storage.bucket(bucketName).file(uniqueFileName);
+      const blobStream = blob.createWriteStream({
+        resumable: false,
+        metadata: {
+          contentType: file.type || 'text/csv',
+        },
+      });
 
-        console.log(`Bestand ${safeFileName} succesvol geüpload naar GCS.`);
+      blobStream.on('error', (err) => {
+        console.error('Fout bij het uploaden naar Cloud Storage:', err);
+        reject(err);
+      });
 
-        // 5. Stuur een succesvol antwoord terug 
-        return NextResponse.json({
-            message: 'Bestand succesvol geüpload. Analyse wordt gestart.',
-            fileName: safeFileName,
-        }, { status: 200 });
+      blobStream.on('finish', () => {
+        // Het bestand is nu opgeslagen. Dit triggert de Cloud Run-functie.
+        // BELANGRIJK: We verwijderen het bestand HIER NIET. 
+        // De Cloud Run-functie (process-bank-csv) is verantwoordelijk voor de opruiming.
+        resolve();
+      });
 
-    } catch (error) {
-        console.error("Fout bij GCS upload:", error);
-        return NextResponse.json(
-            { error: 'Interne serverfout bij het uploaden.' }, 
-            { status: 500 }
-        );
-    }
+      blobStream.end(buffer);
+    });
+
+    await fileUploadPromise;
+
+    return NextResponse.json(
+      { message: 'Bestand succesvol geüpload. Analyse wordt gestart.', filename: uniqueFileName },
+      { status: 200 }
+    );
+  } catch (error) {
+    console.error('Onverwachte fout in de upload API:', error);
+    return NextResponse.json(
+      { error: 'Interne serverfout bij de verwerking.' },
+      { status: 500 }
+    );
+  }
 }
