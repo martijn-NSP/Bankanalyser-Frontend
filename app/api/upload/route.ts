@@ -2,18 +2,26 @@ import { NextRequest, NextResponse } from 'next/server';
 import { Storage } from '@google-cloud/storage';
 
 // Initialiseer de Google Cloud Storage client
+// Authenticatie wordt automatisch afgehandeld door de Vercel env vars
 const storage = new Storage({
   projectId: process.env.GCP_PROJECT_ID,
+  credentials: {
+    client_email: process.env.GCP_CLIENT_EMAIL,
+    private_key: process.env.GCP_PRIVATE_KEY?.replace(/\\n/g, '\n'), // Vervang \n met echte newlines
+  },
 });
 
-// De bucket waar ongeprocessede CSV's landen
-const bucketName = process.env.GCP_UNPROCESSED_BUCKET_NAME;
+// --- HIER IS DE WIJZIGING ---
+// De bucket waar ongeprocessede CSV's landen. 
+// Dit leest nu de variabele die u in Vercel heeft ingesteld (GCP_BUCKET_NAME).
+const bucketName = process.env.GCP_BUCKET_NAME;
 
 // De API route om CSV bestanden te ontvangen en naar Cloud Storage te sturen
 export async function POST(request: NextRequest) {
   if (!bucketName) {
     return NextResponse.json(
-      { error: 'GCP_UNPROCESSED_BUCKET_NAME is niet ingesteld.' },
+      // Foutmelding ook bijgewerkt om de juiste naam te tonen
+      { error: 'GCP_BUCKET_NAME is niet ingesteld in Vercel.' },
       { status: 500 }
     );
   }
@@ -32,7 +40,7 @@ export async function POST(request: NextRequest) {
     const arrayBuffer = await file.arrayBuffer();
     const buffer = Buffer.from(arrayBuffer);
 
-    // Genereer een unieke bestandsnaam om conflicten te voorkomen
+    // Genereer een unieke bestandsnaam
     const uniqueFileName = `${Date.now()}-${file.name}`;
 
     const fileUploadPromise = new Promise<void>((resolve, reject) => {
@@ -50,8 +58,6 @@ export async function POST(request: NextRequest) {
       });
 
       blobStream.on('finish', () => {
-        // Het bestand is nu opgeslagen. Dit triggert de Cloud Run-functie.
-        // BELANGRIJK: We verwijderen het bestand HIER NIET. 
         // De Cloud Run-functie (process-bank-csv) is verantwoordelijk voor de opruiming.
         resolve();
       });
